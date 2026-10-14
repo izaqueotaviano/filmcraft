@@ -528,6 +528,9 @@ pub struct UiState {
     /// Sequence Settings dialog draft.
     #[serde(default)]
     pub sequence_settings: SequenceSettingsDraft,
+    /// File ▸ New ▸ Project… dialog draft.
+    #[serde(default)]
+    pub new_project: NewProjectDraft,
     /// Set Transition Duration dialog draft (double-click a transition).
     #[serde(default)]
     pub transition_duration: TransitionDurationDraft,
@@ -843,6 +846,49 @@ pub struct TransitionDurationDraft {
     pub frames: i64,
 }
 
+/// File ▸ New ▸ Project… (`panels::new_project`): the category tab, the chosen preset (an id of
+/// `panels::new_project::PRESETS`, empty once a field no longer matches it), the project's name,
+/// the first sequence's frame size and timebase (`fps_num`/`fps_den`), whether to make that
+/// sequence, and Advanced Options (open or not; sample rate, `mix` as `file.newSequence` takes it,
+/// video and audio tracks).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct NewProjectDraft {
+    pub category: String,
+    pub preset: String,
+    pub name: String,
+    pub width: u32,
+    pub height: u32,
+    pub fps_num: i64,
+    pub fps_den: i64,
+    pub sequence: bool,
+    pub advanced: bool,
+    pub sample_rate: u32,
+    pub mix: String,
+    pub video_tracks: u32,
+    pub audio_tracks: u32,
+}
+
+impl Default for NewProjectDraft {
+    fn default() -> Self {
+        Self {
+            category: "all".into(),
+            preset: "hd1080-23976".into(),
+            name: String::new(),
+            width: 1920,
+            height: 1080,
+            fps_num: 24_000,
+            fps_den: 1001,
+            sequence: true,
+            advanced: false,
+            sample_rate: 48_000,
+            mix: "Stereo".into(),
+            video_tracks: 3,
+            audio_tracks: 3,
+        }
+    }
+}
+
 /// The Sequence Settings dialog (Sequence ▸ Sequence Settings…), filled from the active sequence
 /// when it opens (`panels::sequence_settings::open`). `tab`: `general`, `color` or `vr`; the
 /// timebase is `fps_num`/`fps_den`; `mix`: `Stereo`, `Mono`, `5.1` or `Adaptive`; `working_space`:
@@ -997,6 +1043,7 @@ impl Default for UiState {
             add_tracks: AddTracksDraft::default(),
             delete_tracks: DeleteTracksDraft::default(),
             sequence_settings: SequenceSettingsDraft::default(),
+            new_project: NewProjectDraft::default(),
             transition_duration: TransitionDurationDraft::default(),
             gfx_edit: None,
             pen_points: vec![],

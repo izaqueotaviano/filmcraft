@@ -214,6 +214,8 @@ pub enum Dialog {
     SequenceSettings,
     /// Set Transition Duration (double-click a transition in the Timeline).
     TransitionDuration,
+    /// File ▸ New ▸ Project….
+    NewProject,
 }
 
 #[derive(Default)]

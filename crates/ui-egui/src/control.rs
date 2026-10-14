@@ -158,6 +158,14 @@ pub fn handle(app: &mut FilmcraftApp, ctx: &egui::Context, req: &ControlRequest)
                     None => return err("unknown theme (dark, medium, light)"),
                 }
             }
+            // File ▸ New ▸ Project… draft (category, preset, name, width, height, fpsNum/fpsDen,
+            // sequence, advanced, sampleRate, mix, videoTracks, audioTracks), merged into the
+            // current one; a new `preset` fills the fields from it
+            if let Some(patch) = p.get("newProject")
+                && let Err(e) = crate::panels::new_project::patch(app, patch)
+            {
+                return err(e);
+            }
             // the open Settings dialog: page and draft values (`{"page": id, "values": {key: value}}`)
             if let Some(st) = p.get("settings")
                 && let Err(e) = crate::panels::settings::patch(app, st)

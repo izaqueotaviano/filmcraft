@@ -44,6 +44,29 @@ impl ThemeKind {
     }
 }
 
+/// The surfaces of a sheet-style dialog (File ▸ New ▸ Project…): the window and its details
+/// column, the well the preset cards sit in, the cards, fields, the category tabs, the selected
+/// card's outline and the Create button.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Sheet {
+    pub window: Color32,
+    pub well: Color32,
+    pub card: Color32,
+    pub card_hover: Color32,
+    pub input: Color32,
+    /// An idle tab's label, section headings and secondary text.
+    pub tab_idle: Color32,
+    /// The active tab's label and its underline.
+    pub tab_active: Color32,
+    /// The selected card's outline.
+    pub selected: Color32,
+    /// The primary (Create) button.
+    pub cta: Color32,
+}
+
+/// The default highlight before the shared dark palette (#2f6bdf).
+pub const LEGACY_DEFAULT_HIGHLIGHT: [u8; 3] = [0x2f, 0x6b, 0xdf];
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Tokens {
     pub kind: ThemeKind,
@@ -151,30 +174,33 @@ pub struct Tokens {
 
 impl Tokens {
     pub fn for_kind(kind: ThemeKind) -> Self {
-        // Measured from Premiere 26 "Darkest" (plan/premiere/02-ui-ux.md §1).
+        // The darkest level (default). Its chrome follows the dark palette shared with the sibling
+        // apps: a #1e1e1e window background, #2c2c2c panels, header and timeline, #252525 tab rows
+        // and ruler, #383838 hover, #3e3e3e borders and dividers, a #1273e6 highlight with #2680eb
+        // for hover and focus. The audio, plot and effect surfaces keep their earlier values.
         let dark = Tokens {
             kind,
-            app_bg: Color32::from_rgb(0, 0, 0),
-            header_bg: Color32::from_rgb(0x1d, 0x1d, 0x1d),
-            panel_bg: Color32::from_rgb(0x1d, 0x1d, 0x1d),
-            tab_bg: Color32::from_rgb(0x1d, 0x1d, 0x1d),
+            app_bg: Color32::from_rgb(0x1e, 0x1e, 0x1e),
+            header_bg: Color32::from_rgb(0x2c, 0x2c, 0x2c),
+            panel_bg: Color32::from_rgb(0x2c, 0x2c, 0x2c),
+            tab_bg: Color32::from_rgb(0x25, 0x25, 0x25),
             tab_text: Color32::from_rgb(0xb0, 0xb0, 0xb0),
             tab_text_active: Color32::from_rgb(0xd1, 0xd1, 0xd1),
-            focus: Color32::from_rgb(0x57, 0x94, 0xec),
-            accent: Color32::from_rgb(0x2f, 0x6b, 0xdf),
-            accent_hover: Color32::from_rgb(0x3f, 0x7c, 0xe8),
+            focus: Color32::from_rgb(0x26, 0x80, 0xeb),
+            accent: Color32::from_rgb(0x12, 0x73, 0xe6),
+            accent_hover: Color32::from_rgb(0x26, 0x80, 0xeb),
             text: Color32::from_rgb(0xd1, 0xd1, 0xd1),
             text_dim: Color32::from_rgb(0xb0, 0xb0, 0xb0),
             text_faint: Color32::from_rgb(0x6e, 0x6e, 0x6e),
             icon: Color32::from_rgb(0xb0, 0xb0, 0xb0),
             icon_active: Color32::from_rgb(0xd1, 0xd1, 0xd1),
-            hover: Color32::from_rgb(0x2c, 0x2c, 0x2c),
+            hover: Color32::from_rgb(0x38, 0x38, 0x38),
             pressed: Color32::from_rgb(0x4b, 0x4b, 0x4b),
-            field_bg: Color32::from_rgb(0x0e, 0x0e, 0x0e),
-            field_border: Color32::from_rgb(0x30, 0x30, 0x30),
-            separator: Color32::from_rgb(0x30, 0x30, 0x30),
-            row_alt: Color32::from_rgb(0x21, 0x21, 0x21),
-            row_selected: Color32::from_rgb(0x33, 0x33, 0x33),
+            field_bg: Color32::from_rgb(0x1e, 0x1e, 0x1e),
+            field_border: Color32::from_rgb(0x3e, 0x3e, 0x3e),
+            separator: Color32::from_rgb(0x3e, 0x3e, 0x3e),
+            row_alt: Color32::from_rgb(0x2f, 0x2f, 0x2f),
+            row_selected: Color32::from_rgb(0x3a, 0x3a, 0x3a),
             hot_text: Color32::from_rgb(0x40, 0x96, 0xf3),
             pill_active_bg: Color32::from_rgb(0x3a, 0x3a, 0x3a),
             clip_bar_bg: Color32::from_rgb(58, 58, 70),
@@ -212,18 +238,18 @@ impl Tokens {
             switch_border: Color32::from_gray(138),
             slider_disabled_track: Color32::from_gray(74),
             slider_disabled_knob: Color32::from_gray(106),
-            button_hover: Color32::from_gray(42),
+            button_hover: Color32::from_gray(0x38),
             button_border: Color32::from_gray(75),
             caption_track_bg: Color32::from_rgb(0x23, 0x20, 0x2a),
             scroll_thumb: Color32::from_gray(0x4b),
             scroll_thumb_hover: Color32::from_gray(0x6a),
             vertical_scroll_thumb: Color32::from_gray(80),
             disabled_clip_bg: Color32::from_gray(0x2a),
-            tl_bg: Color32::from_rgb(0x1d, 0x1d, 0x1d),
-            tl_track_bg: Color32::from_rgb(0x1d, 0x1d, 0x1d),
-            tl_track_bg_alt: Color32::from_rgb(0x1d, 0x1d, 0x1d),
-            tl_header_bg: Color32::from_rgb(0x1d, 0x1d, 0x1d),
-            tl_ruler_bg: Color32::from_rgb(0x1d, 0x1d, 0x1d),
+            tl_bg: Color32::from_rgb(0x2c, 0x2c, 0x2c),
+            tl_track_bg: Color32::from_rgb(0x2c, 0x2c, 0x2c),
+            tl_track_bg_alt: Color32::from_rgb(0x2c, 0x2c, 0x2c),
+            tl_header_bg: Color32::from_rgb(0x2c, 0x2c, 0x2c),
+            tl_ruler_bg: Color32::from_rgb(0x25, 0x25, 0x25),
             tl_ruler_tick: Color32::from_rgb(0x8d, 0x8d, 0x8d),
             tl_ruler_text: Color32::from_rgb(0xb0, 0xb0, 0xb0),
             playhead: Color32::from_rgb(0x58, 0x95, 0xec),
@@ -233,7 +259,7 @@ impl Tokens {
             render_red: Color32::from_rgb(0xe3, 0x48, 0x50),
             render_yellow: Color32::from_rgb(0xf0, 0xf0, 0x4f),
             render_green: Color32::from_rgb(0x2d, 0x9d, 0x78),
-            monitor_bg: Color32::from_rgb(0x1d, 0x1d, 0x1d),
+            monitor_bg: Color32::from_rgb(0x1e, 0x1e, 0x1e),
             timecode: Color32::from_rgb(0x40, 0x96, 0xf3),
             danger: Color32::from_rgb(0xdc, 0x51, 0x3d),
             radius: 0.0,
@@ -337,6 +363,9 @@ impl Tokens {
     /// the focus outline, the playhead, timecodes, drag values and track targeting) and accessible
     /// colour contrast (brighter secondary text and borders).
     pub fn with_appearance(mut self, highlight: Option<[u8; 3]>, accessible_contrast: bool) -> Self {
+        // The highlight FilmCraft shipped as its default before the shared dark palette: saved
+        // preferences still hold it, and it means "the theme's own".
+        let highlight = highlight.filter(|c| *c != LEGACY_DEFAULT_HIGHLIGHT);
         if let Some([r, g, b]) = highlight {
             let c = Color32::from_rgb(r, g, b);
             // A highlight of the user's own also colours the theme's other blues: the same hue, as
@@ -373,6 +402,37 @@ impl Tokens {
             }
         }
         self
+    }
+
+    /// The surfaces of the New Project sheet ([`Sheet`]). The dark levels use the dark palette
+    /// shared with the sibling apps; Light derives the same roles from its own tokens.
+    pub fn sheet_palette(&self) -> Sheet {
+        let g = Color32::from_gray;
+        if self.kind == ThemeKind::Light {
+            Sheet {
+                window: self.panel_bg,
+                well: self.row_alt,
+                card: self.panel_bg,
+                card_hover: self.hover,
+                input: self.field_bg,
+                tab_idle: self.text_dim,
+                tab_active: self.text,
+                selected: self.focus,
+                cta: self.accent,
+            }
+        } else {
+            Sheet {
+                window: g(0x2c),
+                well: g(0x1e),
+                card: g(0x2c),
+                card_hover: g(0x38),
+                input: g(0x1e),
+                tab_idle: g(0xa5),
+                tab_active: Color32::WHITE,
+                selected: Color32::from_rgb(0x26, 0x80, 0xeb),
+                cta: Color32::from_rgb(0x12, 0x73, 0xe6),
+            }
+        }
     }
 
     /// Mono font for timecode.

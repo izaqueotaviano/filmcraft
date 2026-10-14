@@ -3578,3 +3578,14 @@
 
 # The native macOS application menu (Settings…).
 	Settings	Preferências
+# File ▸ New ▸ Project… (the New Project sheet)
+	New Project	Novo projeto
+	Start a new project	Comece um novo projeto
+	Pick a preset, or set your own frame size and rate in Preset Details.	Escolha uma predefinição ou defina seu próprio tamanho de quadro e taxa em Detalhes da predefinição.
+	Cinema	Cinema
+	Social	Redes sociais
+	Advanced Options	Opções avançadas
+	Create	Criar
+	Preset Details	Detalhes da predefinição
+	Blank project presets	Predefinições de projeto em branco
+	Create a first sequence	Criar uma primeira sequência
