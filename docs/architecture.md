@@ -1,6 +1,6 @@
 # Architecture
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** trivial (status line, revision history and roadmap link added; content checked against the crate list) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
+> **Last reviewed:** 2026-10-15 · **Last updated:** 2026-10-15 · **Change:** minor (§5.4: colour parameters are sRGB-encoded; the pickers and the eyedropper follow that) · **Target:** Adobe Premiere Pro 2026 (26.5.2)
 
 FilmCraft is a Cargo workspace of small crates with strictly enforced layering. The engine is
 headless: every feature can be reached without a window, and the egui UI is one client among the
@@ -567,6 +567,14 @@ frame (Y'CbCr/RGB + metadata) ─► source colour space: Interpret Footage over
   scopes); otherwise the top-level render is converted for an SDR monitor. The other colour
   effects work on display-encoded values clamped to 0..1 (they clip HDR highlights above
   reference white).
+- **Colour parameters** (`ParamValue::Color`: effect, transition, graphic and Lumetri tint
+  colours, Color Matte) hold **sRGB-encoded straight** values 0..1, the numbers of their
+  `#rrggbb`; the renderer decodes them to linear (`effects::dec`, `graphics::premul_linear`) and
+  keyers compare them with the display-encoded picture. The UI converts only at egui's linear
+  float pickers (`widgets::param_color_button`), and the Program monitor's eyedropper stores the
+  8-bit sRGB pixel of a render of the sequence at the playhead (armed effect off, so a keyed
+  colour can still be picked) unchanged, so a picked colour is the one on screen and round-trips
+  through the picker, a Fill and a key.
 - **HDR grading (Lumetri).** `FxCtx::working` carries the sequence's working space. In a PQ or HLG
   sequence Lumetri grades the working space's own signal normalised to **HDR White** (cd/m²,
   Basic Correction; the curves, wheels, looks and HSL Secondary use the Curves section's **HDR
@@ -770,4 +778,5 @@ native menus) in `apps/filmcraft`. [roadmap.md](roadmap.md) has the milestone st
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-15 | minor | §5.4 Colour parameters: documented as sRGB-encoded; the Effect Controls / transition pickers and the eyedropper had treated them as linear (swatches lighter than the render, picked colours rendered darker) |
 | 2026-10-10 | trivial | Status line and revision history added (craftrules progress-docs standard); milestone link points at docs/roadmap.md |

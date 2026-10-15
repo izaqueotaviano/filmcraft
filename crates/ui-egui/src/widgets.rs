@@ -354,10 +354,73 @@ pub fn number_drag<Num: egui::emath::Numeric>(value: &mut Num) -> egui::DragValu
     egui::DragValue::new(value).custom_parser(move |s| crate::calc::eval(s, current))
 }
 
+/// A colour parameter's button and picker (Effect Controls, Lumetri tints, transitions). Returns the
+/// new parameter value when the user changed it.
+///
+/// Colour parameters (`ParamValue::Color`) hold **sRGB-encoded** straight values 0..1: the numbers a
+/// `#rrggbb` reads as, what the renderer decodes to linear light (`filmcraft_render` `dec` /
+/// `premul_linear`), and so what the monitor shows for that colour. egui's float pickers take
+/// linear [`egui::Rgba`], so the value is converted on the way in and out here and never stored
+/// linear (that showed swatches lighter than the picture, and stored eyedropped colours darker).
+pub fn param_color_button(ui: &mut Ui, value: [f32; 4]) -> (Response, Option<[f32; 4]>) {
+    let mut rgba = param_color_to_rgba(value);
+    let r = egui::color_picker::color_edit_button_rgba(ui, &mut rgba, egui::color_picker::Alpha::Opaque);
+    let changed = r.changed().then(|| rgba_to_param_color(rgba, value[3]));
+    (r, changed)
+}
+
+/// A finite value in 0..1 (anything else, NaN included, is pinned to the range or 0).
+fn unit(v: f32) -> f32 {
+    if v.is_finite() { v.clamp(0.0, 1.0) } else { 0.0 }
+}
+
+/// A colour parameter value (sRGB-encoded, see [`param_color_button`]) as egui's linear colour.
+pub fn param_color_to_rgba(c: [f32; 4]) -> egui::Rgba {
+    let l = |v: f32| filmcraft_color::srgb_to_linear(unit(v));
+    egui::Rgba::from_rgb(l(c[0]), l(c[1]), l(c[2]))
+}
+
+/// egui's linear colour back to a colour parameter value (sRGB-encoded) with alpha `alpha`.
+pub fn rgba_to_param_color(c: egui::Rgba, alpha: f32) -> [f32; 4] {
+    let [r, g, b, _] = c.to_rgba_unmultiplied();
+    let e = |v: f32| filmcraft_color::linear_to_srgb(unit(v));
+    [e(r), e(g), e(b), if alpha.is_finite() { alpha.clamp(0.0, 1.0) } else { 1.0 }]
+}
+
+/// The colour parameter value for an 8-bit sRGB pixel as the monitor shows it (the eyedropper):
+/// the same numbers as its `#rrggbb`, opaque.
+pub fn param_color_from_srgb8(rgb: [u8; 3]) -> [f32; 4] {
+    let c = |v: u8| f32::from(v) / 255.0;
+    [c(rgb[0]), c(rgb[1]), c(rgb[2]), 1.0]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::theme::ThemeKind;
+
+    /// The swatch of a stored colour is that colour: `#808080` (Lumetri's neutral tint 0.5) shows
+    /// as `#808080`, not the lighter `#bcbcbc` it showed when the value was taken as linear.
+    #[test]
+    fn color_params_show_and_store_the_encoded_value() {
+        for hex in ["#808080", "#e67d30", "#221005", "#00cc33", "#000000", "#ffffff"] {
+            let stored = filmcraft_color::parse_hex(hex).unwrap();
+            let shown = Color32::from(param_color_to_rgba(stored));
+            let [r, g, b, _] = shown.to_srgba_unmultiplied();
+            assert_eq!(format!("#{r:02x}{g:02x}{b:02x}"), hex, "swatch of {hex}");
+            let back = rgba_to_param_color(param_color_to_rgba(stored), stored[3]);
+            for k in 0..4 {
+                assert!((back[k] - stored[k]).abs() < 1e-4, "{hex} round trip: {back:?} vs {stored:?}");
+            }
+        }
+        // what the eyedropper stores reads back as the pixel's hex
+        assert_eq!(filmcraft_color::to_hex(param_color_from_srgb8([0xe6, 0x7d, 0x30])), "#e67d30");
+        // junk never panics and stays in range
+        let j = rgba_to_param_color(egui::Rgba::from_rgb(f32::NAN, f32::INFINITY, -3.0), f32::NAN);
+        assert!(j.iter().all(|v| (0.0..=1.0).contains(v)), "{j:?}");
+        let s = param_color_to_rgba([f32::NAN, 7.0, -1.0, 1.0]);
+        assert!([s.r(), s.g(), s.b()].iter().all(|v| (0.0..=1.0).contains(v)), "{s:?}");
+    }
 
     fn frame(ctx: &egui::Context, events: Vec<egui::Event>, id: egui::Id) {
         let t = Tokens::for_kind(ThemeKind::Dark);

@@ -565,9 +565,11 @@ fn eyedropper(app: &mut FilmcraftApp, ui: &mut egui::Ui, resp: &egui::Response, 
         app.ui.status = tl!("Eyedropper: no picture to sample").to_string();
         return;
     };
-    // the parameter stores linear values, like the colour picker beside it
-    let lin = egui::Rgba::from(Color32::from_rgb(rgb[0], rgb[1], rgb[2]));
-    let mut params = json!({"clip": armed.clip, "effect": armed.effect, "param": armed.param, "value": [lin.r(), lin.g(), lin.b(), 1.0]});
+    // Colour parameters hold sRGB-encoded values (what the renderer decodes, and what a `#rrggbb`
+    // reads as), so the pixel's own values go in unchanged: storing them linearised made every
+    // picked colour darker than the picture (a key colour the keyer then missed).
+    let value = crate::widgets::param_color_from_srgb8(rgb);
+    let mut params = json!({"clip": armed.clip, "effect": armed.effect, "param": armed.param, "value": value});
     if let Some(k) = armed.mask {
         params["mask"] = json!(k);
     }
@@ -594,7 +596,8 @@ fn sample_rgb(img: &crate::frames::Rgba, uv: (f32, f32)) -> Option<[u8; 3]> {
             n += 1;
         }
     }
-    let avg = |c: usize| u8::try_from(sum[c].checked_div(n)?).ok();
+    // rounded, so the average of a flat area is never biased a code down
+    let avg = |c: usize| u8::try_from(sum[c].saturating_add(n / 2).checked_div(n)?).ok();
     Some([avg(0)?, avg(1)?, avg(2)?])
 }
 

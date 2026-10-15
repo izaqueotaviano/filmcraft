@@ -626,9 +626,9 @@ pub(crate) fn param_row(
             });
         }
         (ParamKind::Color, ParamValue::Color(c)) => {
-            let mut rgba = egui::Rgba::from_rgba_unmultiplied(c[0], c[1], c[2], c[3]);
-            if egui::color_picker::color_edit_button_rgba(&mut vui, &mut rgba, egui::color_picker::Alpha::Opaque).changed() {
-                set = Some(json!([rgba.r(), rgba.g(), rgba.b(), rgba.a()]));
+            // (the value is sRGB-encoded; the button converts for egui's linear picker)
+            if let (_, Some(nc)) = crate::widgets::param_color_button(&mut vui, *c) {
+                set = Some(json!(nc));
             }
             // Eyedropper: arm it, then click a pixel in the Program monitor (Esc cancels)
             let target = crate::state::Eyedropper { clip: clip.0, effect: idx, param: pd.id.to_string(), mask };
@@ -811,11 +811,10 @@ pub fn lumetri_panel(app: &mut FilmcraftApp, ui: &mut egui::Ui, rect: Rect) {
                         if s.double_clicked() {
                             actions.push(json!({"clip": clip.0, "effect": idx, "param": pd.id, "value": pd.default.as_f64().unwrap_or(0.0)}));
                         }
-                    } else if let ParamValue::Color(c) = v {
-                        let mut rgba = egui::Rgba::from_rgba_unmultiplied(c[0], c[1], c[2], c[3]);
-                        if egui::color_picker::color_edit_button_rgba(ui, &mut rgba, egui::color_picker::Alpha::Opaque).changed() {
-                            actions.push(json!({"clip": clip.0, "effect": idx, "param": pd.id, "value": [rgba.r(), rgba.g(), rgba.b(), 1.0]}));
-                        }
+                    } else if let ParamValue::Color(c) = v
+                        && let (_, Some(nc)) = crate::widgets::param_color_button(ui, [c[0], c[1], c[2], 1.0])
+                    {
+                        actions.push(json!({"clip": clip.0, "effect": idx, "param": pd.id, "value": nc}));
                     }
                 });
             }

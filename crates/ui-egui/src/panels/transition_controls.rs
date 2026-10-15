@@ -448,12 +448,12 @@ fn param_widget(ui: &mut egui::Ui, elems: &mut Elems, pid: &str, kind: &ParamKin
             picked.map(|i| json!({"params": { pid: i }}))
         }
         (ParamKind::Color, ParamValue::Color(c)) => {
-            let mut c = *c;
-            let r = ui.color_edit_button_rgba_unmultiplied(&mut c);
-            elems.push((eid, r.rect, format!("{c:?}")));
-            r.changed().then(|| {
+            // (the value is sRGB-encoded, like every colour parameter; the button converts)
+            let (r, changed) = crate::widgets::param_color_button(ui, *c);
+            elems.push((eid, r.rect, format!("{:?}", changed.unwrap_or(*c))));
+            changed.map(|c| {
                 let mut v = drag(&r);
-                v["params"] = json!({ pid: [c[0], c[1], c[2], c[3]] });
+                v["params"] = json!({ pid: c });
                 v
             })
         }

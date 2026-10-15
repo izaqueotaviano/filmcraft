@@ -605,3 +605,44 @@ fn eyedropper_picks_a_key_color_on_a_selected_clip() {
     }
     assert_ne!(color(&mut d), before, "the eyedropper filled Key Color from the Program picture");
 }
+
+/// The eyedropper stores the colour the Program monitor shows: a flat matte of `#e67d30` picks
+/// `#e67d30` (as an sRGB-encoded parameter, the convention of every colour parameter), at any
+/// monitor zoom. It stored the linearised value before (`#e67d30` became the numbers of `#ca3408`,
+/// which the renderer, decoding them again, drew and keyed much darker).
+#[test]
+fn eyedropper_picks_exactly_the_color_the_monitor_shows() {
+    for (hex, zoom) in [("#e67d30", None), ("#221005", Some(4.0)), ("#00cc33", Some(0.25))] {
+        let mut d = Driver::demo();
+        let r = d.exec("file.newColorMatte", json!({"color": hex, "width": 320, "height": 180, "seconds": 2.0}));
+        let item = r["item"].clone();
+        d.exec("file.newSequenceFromClip", json!({"items": [item]}));
+        let clip = track_clips(&d.sequence(), 0)[0]["clip"].clone();
+        d.exec("timeline.select", json!({"clips": [clip]}));
+        d.exec("effects.apply", json!({"effect": "Color Key"}));
+        if let Some(z) = zoom {
+            d.ok("ui.set", json!({"program": {"zoom": z}}));
+        }
+        d.ok("ui.panel.show", json!({"panel": "EffectControls"}));
+        d.frames(4);
+        let color = |d: &mut Driver| d.sequence()["video"][0]["items"][0]["effects"][0]["params"]["color"]["value"].clone();
+        let before = color(&mut d);
+        d.ok("ui.click", json!({"id": "effectControls.color_key.color.eyedropper"}));
+        d.frames(2);
+        d.ok("ui.click", json!({"id": "program.picture"}));
+        for _ in 0..300 {
+            if color(&mut d) != before {
+                break;
+            }
+            d.frames(1);
+        }
+        let value = color(&mut d);
+        // `sequence.inspect` writes the value as `"Color([r, g, b, a])"`
+        let inner = value.as_str().and_then(|s| s.strip_prefix("Color([")?.strip_suffix("])")).unwrap_or_else(|| panic!("not a colour: {value}"));
+        let got: Vec<f64> = inner.split(',').map(|v| v.trim().parse().unwrap()).collect();
+        let want = filmcraft_color::parse_hex(hex).unwrap();
+        for k in 0..3 {
+            assert!((got[k] - f64::from(want[k])).abs() <= 1.0 / 255.0 + 1e-6, "{hex} (zoom {zoom:?}): picked {got:?}, want {want:?}");
+        }
+    }
+}
